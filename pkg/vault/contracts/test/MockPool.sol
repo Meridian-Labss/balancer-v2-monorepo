@@ -165,13 +165,21 @@ contract MockPool is IGeneralPool, IMinimalSwapInfoPool {
         return (0, new uint256[](0));
     }
 
+    /// @notice Stores mock response data for pool exits
+    /// @param bptIn Amount of BPT (LP tokens) that will be burned
+    /// @param amountsOut Array of token amounts that will be returned to user
     struct ExitPoolResponse {
         uint256 bptIn;
         uint256[] amountsOut;
     }
 
+    /// @notice Maps pool IDs to their mock exit responses
     mapping(bytes32 => ExitPoolResponse) private _mockResponses;
 
+    /// @notice Sets mock response data for testing pool exits
+    /// @param poolId The pool identifier
+    /// @param bptIn Amount of BPT tokens that will be burned
+    /// @param amountsOut Array of token amounts that will be returned
     function setMockExitResponse(
         bytes32 poolId,
         uint256 bptIn,
@@ -180,6 +188,13 @@ contract MockPool is IGeneralPool, IMinimalSwapInfoPool {
         _mockResponses[poolId] = ExitPoolResponse(bptIn, amountsOut);
     }
 
+    /// @notice Mock implementation of pool exit query
+    /// @param poolId The pool identifier
+    /// @param sender Address initiating the exit (unused in mock)
+    /// @param recipient Address receiving the tokens (unused in mock)
+    /// @param request Exit request parameters including assets and minimum amounts
+    /// @return bptIn Amount of BPT tokens to be burned
+    /// @return amountsOut Array of token amounts to be received
     function queryExit(
         bytes32 poolId,
         address sender,
@@ -188,6 +203,7 @@ contract MockPool is IGeneralPool, IMinimalSwapInfoPool {
     ) external view override returns (uint256 bptIn, uint256[] memory amountsOut) {
         ExitPoolResponse memory response = _mockResponses[poolId];
         
+        // If no mock response is set, return default values of 1e18 for each asset
         if (response.amountsOut.length == 0) {
             uint256[] memory defaultAmounts = new uint256[](request.assets.length);
             for (uint256 i = 0; i < request.assets.length; i++) {
