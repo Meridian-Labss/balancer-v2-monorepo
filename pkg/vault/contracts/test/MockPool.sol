@@ -165,6 +165,21 @@ contract MockPool is IGeneralPool, IMinimalSwapInfoPool {
         return (0, new uint256[](0));
     }
 
+    mapping(bytes => ExitPoolResponse) private _mockResponses;
+    
+    struct ExitPoolResponse {
+        uint256 bptIn;
+        uint256[] amountsOut;
+    }
+
+    function setMockExitResponse(
+        bytes memory userData,
+        uint256 bptIn,
+        uint256[] memory amountsOut
+    ) external {
+        _mockResponses[userData] = ExitPoolResponse(bptIn, amountsOut);
+    }
+
     function queryExit(
         bytes32,
         address,
@@ -172,8 +187,17 @@ contract MockPool is IGeneralPool, IMinimalSwapInfoPool {
         uint256[] memory,
         uint256,
         uint256,
-        bytes memory
-    ) external pure override returns (uint256, uint256[] memory) {
-        return (0, new uint256[](0));
+        bytes memory userData
+    ) external view override returns (uint256, uint256[] memory) {
+        ExitPoolResponse memory response = _mockResponses[userData];
+        
+        if (response.amountsOut.length == 0) {
+            uint256[] memory defaultAmounts = new uint256[](2);
+            defaultAmounts[0] = 1e18; // 1 token0
+            defaultAmounts[1] = 1e18; // 1 token1
+            return (1e18, defaultAmounts); // 1 BPT in, 1 of each token out
+        }
+
+        return (response.bptIn, response.amountsOut);
     }
 }
