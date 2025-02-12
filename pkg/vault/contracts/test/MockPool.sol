@@ -165,37 +165,35 @@ contract MockPool is IGeneralPool, IMinimalSwapInfoPool {
         return (0, new uint256[](0));
     }
 
-    mapping(bytes => ExitPoolResponse) private _mockResponses;
-    
     struct ExitPoolResponse {
         uint256 bptIn;
         uint256[] amountsOut;
     }
 
+    mapping(bytes32 => ExitPoolResponse) private _mockResponses;
+
     function setMockExitResponse(
-        bytes memory userData,
+        bytes32 poolId,
         uint256 bptIn,
         uint256[] memory amountsOut
     ) external {
-        _mockResponses[userData] = ExitPoolResponse(bptIn, amountsOut);
+        _mockResponses[poolId] = ExitPoolResponse(bptIn, amountsOut);
     }
 
     function queryExit(
-        bytes32,
-        address,
-        address,
-        uint256[] memory,
-        uint256,
-        uint256,
-        bytes memory userData
-    ) external view override returns (uint256, uint256[] memory) {
-        ExitPoolResponse memory response = _mockResponses[userData];
+        bytes32 poolId,
+        address sender,
+        address recipient,
+        IVault.ExitPoolRequest memory request
+    ) external view override returns (uint256 bptIn, uint256[] memory amountsOut) {
+        ExitPoolResponse memory response = _mockResponses[poolId];
         
         if (response.amountsOut.length == 0) {
-            uint256[] memory defaultAmounts = new uint256[](2);
-            defaultAmounts[0] = 1e18; // 1 token0
-            defaultAmounts[1] = 1e18; // 1 token1
-            return (1e18, defaultAmounts); // 1 BPT in, 1 of each token out
+            uint256[] memory defaultAmounts = new uint256[](request.assets.length);
+            for (uint256 i = 0; i < request.assets.length; i++) {
+                defaultAmounts[i] = 1e18;
+            }
+            return (1e18, defaultAmounts);
         }
 
         return (response.bptIn, response.amountsOut);
